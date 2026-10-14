@@ -4543,6 +4543,14 @@ ius: 18px; padding: 14px 16px; display: flex; align-items: center;
             replyingToText = null;
             document.getElementById('replyPreviewBar').style.display = 'none';
         }
+        if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').then((reg) => {
+      console.log('Service Worker Registered!', reg);
+    });
+  });
+}
+
     </script>
 </body>
 </html>
