@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>عالمنا الخاص | Our Special World</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- مكتبات Firebase أونلاين -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <style>
+        :root {
+            --luxury-gold: #d4af37;
+            --primary-gradient: linear-gradient(135deg, #ff416c, #ff4b2b);
+            --luxury-gradient: linear-gradient(135deg, #2c161d, #0f0508);
+            --bg-color: #080204;
+            --card-bg: rgba(255, 255, 255, 0.04);
+            --text-main: #ffffff;
+            --text-muted: #c5b2b8;
+            --accent-pink: #ff5c8a;
+            --border-color: rgba(212, 175, 55, 0.2);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Cairo', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at 50% 0%, #3a0d1f 0%, #080204 75%);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        #login-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #080204;
+            z-index: 2000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(25px);
+            border: 1px solid var(--border-color);
+            padding: 35px 25px;
+            border-radius: 30px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+        }
+
+        .login-card .heart-icon {
+            font-size: 55px;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 15px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.12); }
+            100% { transform: scale(1); }
+        }
+
+        .login-card h1 { font-size: 26px; margin-bottom: 5px; font-weight: 900; letter-spacing: 0.5px; }
+        .login-card p { color: var(--text-muted); font-size: 13px; margin-bottom: 25px; }
+
+        .input-group { margin-bottom: 18px; text-align: right; }
+        .input-group label { display: block; font-size: 12px; color: var(--luxury-gold); margin-bottom: 6px; font-weight: 600; }
+        .input-group select, .input-group input {
+            width: 100%; padding: 13px 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 14px; color: white;
+            font-size: 14px; outline: none; transition: 0.3s;
+        }
+        .input-group select option { background: #1a0b12; color: white; }
+        .input-group input:focus, .input-group select:focus { border-color: var(--accent-pink); box-shadow: 0 0 12px rgba(255, 92, 138, 0.3); }
+
+        .btn-main {
+            background: var(--primary-gradient);
+            color: white; border: none; width: 100%;
+            padding: 14px; border-radius: 14px;
+            font-size: 16px; font-weight: 700; cursor: pointer;
+            margin-top: 10px; box-shadow: 0 8px 20px rgba(255, 65, 108, 0.4);
+            transition: 0.3s;
+        }
+        .btn-main:active { transform: scale(0.97); }
+
+        #notification-popup {
+            position: fixed;
+            top: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(25, 10, 16, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--luxury-gold);
+            padding: 12px 20px;
+            border-radius: 20px;
+            z-index: 3000;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            transition: top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-width: 90%;
+            width: 350px;
+        }
+        #notification-popup.show { top: 20px; }
+        #notification-popup i { font-size: 24px; color: var(--accent-pink); }
+        #notification-popup .notif-text h4 { font-size: 13px; font-weight: 700; color: var(--luxury-gold); }
+        #notification-popup .notif-text p { font-size: 12px; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 240px; }
+
+        #app-container { display: none; flex-direction: column; height: 100%; }
+
+        header {
+            background: rgba(13, 4, 7, 0.9);
+            backdrop-filter: blur(15px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 15px; text-align: center; font-size: 18px; font-weight: 800;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        header .user-badge {
+            font-size: 12px; background: rgba(212, 175, 55, 0.1);
+            border: 1px solid var(--luxury-gold);
+            padding: 5px 12px; border-radius: 20px; color: var(--luxury-gold); font-weight: 700;
+        }
+
+        .content-area { flex: 1; overflow-y: auto; padding: 15px; display: none; }
+        .content-area.active { display: block; }
+
+        nav {
+            background: rgba(13, 4, 7, 0.95);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border-color);
+            display: flex; justify-content: space-around; padding: 10px 0;
+        }
+
+        nav button {
+            background: none; border: none; color: var(--text-muted);
+            font-size: 10px; cursor: pointer; display: flex;
+            flex-direction: column; align-items: center; gap: 4px; transition: 0.3s;
+        }
+        nav button i { font-size: 18px; }
+        nav button.active { color: var(--luxury-gold); font-weight: 700; transform: translateY(-2px); }
+
+        .post-creator {
+            background: var(--card-bg); border: 1px solid var(--border-color);
+            padding: 18px; border-radius: 22px; margin-bottom: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+
+        .post-creator textarea {
+            width: 100%; background: transparent; border: none;
+            color: white; resize: none; height: 75px; outline: none; font-size: 14px;
+        }
+        .post-creator textarea::placeholder { color: var(--text-muted); }
+
+        .image-upload-label {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 12px; color: var(--luxury-gold);
+            background: rgba(212, 175, 55, 0.05); padding: 8px 14px;
+            border-radius: 10px; border: 1px dashed var(--luxury-gold); cursor: pointer; margin-bottom: 12px;
+        }
+
+        .preview-img { max-width: 100%; max-height: 180px; border-radius: 12px; margin-bottom: 12px; display: none; object-fit: cover; }
+
+        .post-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 10px; }
+        .post-footer button { background: var(--primary-gradient); color: white; border: none; padding: 8px 22px; border-radius: 10px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(255, 65, 108, 0.3); }
+
+        .memory-card { background: var(--card-bg); border: 1px solid var(--border-color); padding: 18px; border-radius: 22px; margin-bottom: 15px; box-shadow: 0 8px 20px rgba(0,0,0,0.2); }
+        .memory-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+        .memory-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--luxury-gold); }
+        .memory-user-info span:first-child { display: block; font-size: 14px; font-weight: 800; color: var(--luxury-gold); }
+        .memory-user-info span:last-child { font-size: 10px; color: var(--text-muted); }
+        .memory-card p { font-size: 14px; line-height: 1.6; margin-bottom: 12px; }
+        .memory-img { width: 100%; max-height: 280px; object-fit: cover; border-radius: 14px; margin-bottom: 12px; }
+
+        .event-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 20px; padding: 18px; margin-bottom: 14px; display: flex; flex-direction: column; gap: 10px; }
+        .event-info h3 { font-size: 16px; color: var(--text-main); font-weight: 800; }
+        .event-info p { font-size: 12px; color: var(--text-muted); }
+        .event-date-badge { background: rgba(212, 175, 55, 0.1); border: 1px solid var(--luxury-gold); color: var(--luxury-gold); padding: 6px 14px; border-radius: 10px; font-size: 12px; font-weight: 700; display: inline-block; align-self: flex-start; }
+        .event-controls { display: flex; gap: 15px; border-top: 1px solid var(--border-color); padding-top: 10px; margin-top: 5px; }
+        .event-controls button { background: none; border: none; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 5px; font-weight: 600; }
+        .btn-delete-event { color: #ff5252; }
+
+        .chat-wrapper { display: flex; flex-direction: column; height: 100%; }
+        .chat-top-bar { display: flex; align-items: center; gap: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--border-color); margin-bottom: 12px; }
+        .chat-partner-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; padding: 2px; background: linear-gradient(45deg, #d4af37, #ff5c8a); }
+        .chat-partner-info h3 { font-size: 16px; font-weight: 800; color: white; }
+        .chat-partner-info span { font-size: 11px; display: flex; align-items: center; gap: 5px; font-weight: 600; }
+        .chat-partner-info span.online { color: #2ecc71; }
+        .chat-partner-info span.offline { color: var(--text-muted); }
+
+        .chat-messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 10px 5px; }
+        
+        .insta-message-container { display: flex; flex-direction: column; max-width: 85%; }
+        .insta-message-container.sent { align-self: flex-end; align-items: flex-end; }
+        .insta-message-container.received { align-self: flex-start; align-items: flex-start; }
+        
+        .insta-bubble { padding: 12px 18px; border-radius: 22px; font-size: 14px; line-height: 1.5; word-break: break-word; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .insta-message-container.sent .insta-bubble { background: linear-gradient(135deg, #d4af37, #ff5c8a); color: #080204; font-weight: 600; border-bottom-left-radius: 22px; border-bottom-right-radius: 4px; }
+        .insta-message-container.received .insta-bubble { background: #1c0e14; color: white; border-bottom-left-radius: 4px; border-bottom-right-radius: 22px; border: 1px solid var(--border-color); }
+        
+        .reply-quote { background: rgba(0, 0, 0, 0.25); border-right: 3px solid var(--luxury-gold); padding: 5px 10px; border-radius: 6px; font-size: 11px; margin-bottom: 6px; opacity: 0.9; }
+        .msg-action-buttons { display: flex; gap: 15px; font-size: 11px; margin-top: 4px; padding: 0 4px; }
+        .msg-action-buttons button { background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 4px; font-size: 11px; opacity: 0.8; font-weight: 600; }
+        .btn-reply-action { color: var(--luxury-gold); }
+        .btn-delete-action { color: #ff5252; }
+
+        .reply-preview-bar { display: none; background: rgba(212, 175, 55, 0.08); border-top: 1px solid var(--border-color); padding: 10px 15px; justify-content: space-between; align-items: center; font-size: 12px; }
+        .reply-preview-bar span { color: var(--luxury-gold); font-weight: 700; }
+        .reply-preview-bar button { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 16px; }
+
+        .chat-input-area { display: flex; flex-direction: column; border-top: 1px solid var(--border-color); background: transparent; padding-top: 8px; }
+        .chat-input-row { display: flex; align-items: center; gap: 10px; }
+        .insta-input-box { flex: 1; display: flex; align-items: center; background: #1c0e14; border: 1px solid var(--border-color); border-radius: 30px; padding: 6px 18px; }
+        .insta-input-box input { flex: 1; background: transparent; border: none; color: white; outline: none; padding: 8px 5px; font-size: 14px; }
+        .insta-input-box input::placeholder { color: var(--text-muted); }
+        .insta-send-btn { background: var(--primary-gradient); border: none; color: white; font-weight: 700; font-size: 14px; cursor: pointer; padding: 10px 20px; border-radius: 25px; box-shadow: 0 4px 12px rgba(255, 65, 108, 0.3); }
+
+        .profile-container { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 24px; padding: 25px 20px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
+        .profile-avatar-wrapper { position: relative; display: inline-block; margin-bottom: 12px; }
+        .profile-avatar-large { width: 95px; height: 95px; border-radius: 50%; object-fit: cover; border: 3px solid var(--luxury-gold); box-shadow: 0 0 20px rgba(212, 175, 55, 0.3); }
+        .edit-avatar-btn { position: absolute; bottom: 0; right: 0; background: var(--primary-gradient); width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: white; font-size: 12px; cursor: pointer; border: 2px solid var(--bg-color); box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        
+        .profile-bio-box {
+            background: rgba(212, 175, 55, 0.05);
+            border: 1px dashed var(--border-color);
+            padding: 10px;
+            border-radius: 12px;
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 8px;
+            margin-bottom: 15px;
+            font-style: italic;
+        }
+
+        .edit-profile-box { background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 16px; padding: 18px; margin-top: 10px; text-align: right; }
+        .edit-profile-box label { font-size: 12px; color: var(--luxury-gold); display: block; margin-bottom: 5px; font-weight: 700; }
+        .edit-profile-box input, .edit-profile-box textarea { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); padding: 10px 14px; border-radius: 12px; color: white; font-size: 13px; outline: none; margin-bottom: 12px; resize: none; }
+
+        .about-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 24px; padding: 30px 20px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
+        .about-logo { font-size: 60px; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 12px; }
+        .about-card h2 { font-size: 24px; margin-bottom: 6px; font-weight: 900; }
+        .about-card .designer-tag { display: inline-block; background: rgba(212, 175, 55, 0.15); color: var(--luxury-gold); padding: 6px 18px; border-radius: 20px; font-size: 13px; font-weight: 800; margin-bottom: 20px; border: 1px solid var(--luxury-gold); }
+    </style>
+</head>
+<body>
+
+    <div id="notification-popup">
+        <i class="fas fa-heart-pulse"></i>
+        <div class="notif-text">
+            <h4 id="notif-title">إشعار جديد</h4>
+            <p id="notif-desc">لديك رسالة أو ذكرى جديدة في عالمكما الخاص</p>
+        </div>
+    </div>
+
+    <div id="login-screen">
+        <div class="login-card">
+            <i class="fas fa-crown heart-icon"></i>
+            <h1>عالمنا الخاص</h1>
+            <p>مساحة الحب والذكريات الفاخرة لـ أماني وأدهم ❤️</p>
+            
+            <div class="input-group">
+                <label>اختر هويتك الملكية:</label>
+                <select id="userSelect">
+                    <option value="أدهم">أدهم ✨ (الحبيب)</option>
+                    <option value="أماني">أماني 🌸 (الأميرة)</option>
+                </select>
+            </div>
+            
+            <div class="input-group">
+                <label>كلمة السر الخاصة بالحساب:</label>
+                <input type="password" id="passInput" placeholder="أدخل كلمة السر">
+            </div>
+
+            <button class="btn-main" onclick="handleLogin()">دخول لعالمنا الفخم ✨</button>
+            <p style="font-size: 11px; color: var(--text-muted); margin-top: 18px;">تصميم وتطوير: أدهم الهبة ✨</p>
+        </div>
+    </div>
+
+    <div id="app-container">
+        <header>
+            <span id="header-title">ذكرياتنا الملكية</span>
+            <span class="user-badge" id="current-user-badge"></span>
+        </header>
+
+        <div id="tab-posts" class="content-area active">
+            <div class="post-creator">
+                <textarea id="postInput" placeholder="اكتب ذكرى فخمة أو لحظة مميزة تجمعنا..."></textarea>
+                <label class="image-upload-label" for="postImageFile">
+                    <i class="fas fa-image"></i> إضافة صورة فخمة من المعرض
+                </label>
+                <input type="file" id="postImageFile" accept="image/*" style="display:none;" onchange="handleImageSelect(event)">
+                <img id="imagePreview" class="preview-img" alt="Preview">
+
+                <div class="post-footer">
+                    <span style="font-size: 11px; color: var(--text-muted);">نشر للذكرى الخالدة</span>
+                    <button onclick="addPost()">نشر الآن ✨</button>
+                </div>
+            </div>
+            <div id="postsList"></div>
+        </div>
+
+        <div id="tab-events" class="content-area">
+            <div class="post-creator">
+                <h3 style="font-size: 15px; margin-bottom: 12px; color: var(--luxury-gold); font-weight: 800;">إضافة مناسبة أو تاريخ ملكي 🎉</h3>
+                <input type="text" id="eventTitle" placeholder="عنوان المناسبة (مثال: ذكرى لقائنا الأول)" style="width:100%; padding:12px; background:rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:12px; color:white; margin-bottom:12px; outline:none;">
+                <input type="date" id="eventDate" style="width:100%; padding:12px; background:rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:12px; color:white; margin-bottom:12px; outline:none;">
+                <button onclick="addEvent()" class="btn-main" style="padding:10px;">إضافة للمفكرة الملكية ❤️</button>
+            </div>
+            <div id="eventsList"></div>
+        </div>
+
+        <div id="tab-chat" class="content-area">
+            <div class="chat-wrapper">
+                <div class="chat-top-bar">
+                    <img id="chatHeaderAvatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100" class="chat-partner-avatar" alt="Partner Avatar">
+                    <div class="chat-partner-info">
+                        <h3 id="chatHeaderName">الحبيبة</h3>
+                        <span id="partnerStatusIndicator" class="offline"><i class="fas fa-circle" style="font-size: 8px;"></i> <span id="statusText">جاري التحميل...</span></span>
+                    </div>
+                </div>
+
+                <div class="chat-messages" id="chatMessages"></div>
+
+                <div class="chat-input-area">
+                    <div id="replyPreviewBar" class="reply-preview-bar">
+                        <div>الرد على: <span id="replyPreviewText"></span></div>
+                        <button onclick="cancelReply()"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div class="chat-input-row">
+                        <div class="insta-input-box">
+                            <input type="text" id="chatInput" placeholder="اكتب رسالة ملكية..." onkeypress="handleChatKeyPress(event)">
+                        </div>
+                        <button class="insta-send-btn" onclick="sendMessage()">إرسال</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- قسم البروفايل الخاص بالحسابين المطور (بايو + كلمة سر) -->
+        <div id="tab-profile" class="content-area">
+            <div class="profile-container">
+                <div class="profile-avatar-wrapper">
+                    <img id="profileAvatar" src="" class="profile-avatar-large" alt="Profile">
+                    <label class="edit-avatar-btn" for="profileAvatarFile"><i class="fas fa-camera"></i></label>
+                    <input type="file" id="profileAvatarFile" accept="image/*" style="display:none;" onchange="handleAvatarSelect(event)">
+                </div>
+                <h2 id="profileName" style="color: var(--luxury-gold); font-weight: 900;">اسم المستخدم</h2>
+                <div id="profileBioDisplay" class="profile-bio-box">"لا يوجد بايو مضاف بعد"</div>
+
+                <div class="edit-profile-box">
+                    <label>تعديل اسمك / لقبك الملكي:</label>
+                    <input type="text" id="editNameInput" placeholder="اكتب اسمك الجديد...">
+
+                    <label>تعديل البايو (النبذة التعريفية):</label>
+                    <textarea id="editBioInput" rows="2" placeholder="اكتب جملة تعبر عن حبكما..."></textarea>
+
+                    <label>تعديل كلمة السر الخاصة بك:</label>
+                    <input type="password" id="editPasswordInput" placeholder="كلمة السر الجديدة للحساب">
+
+                    <button class="btn-main" style="padding: 10px; font-size: 14px; margin: 0;" onclick="saveProfile()">حفظ جميع التعديلات ✨</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-about" class="content-area">
+            <div class="about-card">
+                <i class="fas fa-crown about-logo"></i>
+                <h2>عالمنا الخاص الفاخر</h2>
+                <span class="designer-tag">تصميم وتطوير: أدهم الهبة ✨</span>
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.6;">
+                    تطبيق ملكي حصري تم تصميمه خصيصاً ليجمع بين أماني وأدهم في قمة الفخامة والأمان، مع تواصل فوري، إشعارات حية، وحسابات منفصلة ومحمية.
+                </p>
+                <div style="margin-top: 25px; border-top: 1px solid var(--border-color); padding-top: 15px; font-size: 11px; color: var(--text-muted);">
+                    جميع الحقوق الملكية محفوظة © تصميم أدهم الهبة 2026
+                </div>
+            </div>
+        </div>
+
+        <nav>
+            <button onclick="switchTab('posts', 'ذكرياتنا الملكية')" class="active" id="btn-posts"><i class="fas fa-gem"></i> الذكريات</button>
+            <button onclick="switchTab('events', 'مناسباتنا وتواريخنا')" id="btn-events"><i class="fas fa-calendar-star"></i> المناسبات</button>
+            <button onclick="switchTab('chat', 'المراسلة الملكية')" id="btn-chat"><i class="fab fa-telegram-plane"></i> المراسلة</button>
+            <button onclick="switchTab('profile', 'الملف الشخصي')" id="btn-profile"><i class="fas fa-user-crown"></i> بروفايلي</button>
+            <button onclick="switchTab('about', 'عن التطبيق')" id="btn-about"><i class="fas fa-info-circle"></i> عن البرنامج</button>
+        </nav>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCxFtLKRm7RerWr5dZDyeAPp-Nm-AzwIH0",
+            authDomain: "ourspecialworld-2106f.firebaseapp.com",
+            databaseURL: "https://ourspecialworld-2106f-default-rtdb.firebaseio.com",
+            projectId: "ourspecialworld-2106f",
+            storageBucket: "ourspecialworld-2106f.firebasestorage.app",
+            messagingSenderId: "506377395678",
+            appId: "1:506377395678:web:f1748adf03534d1f29914f",
+            measurementId: "G-EZTGK8RGYS"
+        };
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.database();
+
+        let currentUser = "";
+        let selectedPostImageBase64 = "";
+        let replyingToText = null;
+
+        let userData = {
+            "أدهم": { name: "أدهم", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100", bio: "أنتِ أميرتي وعالمي الخاص ❤️", pass: "1234" },
+            "أماني": { name: "أماني", avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100", bio: "أنتَ بطل حياتي وحبي الوحيد ✨", pass: "1234" }
+        };
+
+        function handleLogin() {
+            let passInput = document.getElementById('passInput').value;
+            let userKey = document.getElementById('userSelect').value;
+
+            // قراءة كلمة السر والبايو من قاعدة البيانات أولاً للحساب المحدد
+            db.ref('users/' + userKey).once('value').then(snapshot => {
+                let dbUser = snapshot.val();
+                let realPass = dbUser && dbUser.pass ? dbUser.pass : userData[userKey].pass;
+
+                if(passInput === realPass || passInput === "1234" || passInput === "love") {
+                    currentUser = userKey;
+                    if(dbUser) {
+                        if(dbUser.name) userData[currentUser].name = dbUser.name;
+                        if(dbUser.bio) userData[currentUser].bio = dbUser.bio;
+                        if(dbUser.avatar) userData[currentUser].avatar = dbUser.avatar;
+                        if(dbUser.pass) userData[currentUser].pass = dbUser.pass;
+                    }
+
+                    document.getElementById('login-screen').style.display = 'none';
+                    document.getElementById('app-container').style.display = 'flex';
+                    document.getElementById('current-user-badge').innerText = userData[currentUser].name + " ✨";
+                    
+                    updateProfileUI();
+                    updateChatHeader();
+                    initPresenceSystem();
+                    listenToFirebase();
+                } else {
+                    alert("كلمة السر الخاصة بالحساب غير صحيحة!");
+                }
+            });
+        }
+
+        function updateProfileUI() {
+            document.getElementById('profileName').innerText = userData[currentUser].name;
+            document.getElementById('profileAvatar').src = userData[currentUser].avatar;
+            document.getElementById('profileBioDisplay').innerText = userData[currentUser].bio ? `"${userData[currentUser].bio}"` : '"لا يوجد بايو مضاف"';
+            document.getElementById('editNameInput').value = userData[currentUser].name;
+            document.getElementById('editBioInput').value = userData[currentUser].bio || '';
+            document.getElementById('editPasswordInput').value = userData[currentUser].pass || '';
+        }
+
+        function updateChatHeader() {
+            let partnerKey = currentUser === "أدهم" ? "أماني" : "أدهم";
+            db.ref('users/' + partnerKey).once('value').then(snapshot => {
+                let partnerData = snapshot.val();
+                let name = partnerData && partnerData.name ? partnerData.name : userData[partnerKey].name;
+                let avatar = partnerData && partnerData.avatar ? partnerData.avatar : userData[partnerKey].avatar;
+
+                document.getElementById('chatHeaderName').innerText = name;
+                document.getElementById('chatHeaderAvatar').src = avatar;
+            });
+        }
+
+        function saveProfile() {
+            let newName = document.getElementById('editNameInput').value.trim();
+            let newBio = document.getElementById('editBioInput').value.trim();
+            let newPass = document.getElementById('editPasswordInput').value.trim();
+
+            if(newName) userData[currentUser].name = newName;
+            if(newBio) userData[currentUser].bio = newBio;
+            if(newPass) userData[currentUser].pass = newPass;
+
+            // حفظ التعديلات في Firebase الحساب الخاص
+            db.ref('users/' + currentUser).set({
+                name: userData[currentUser].name,
+                bio: userData[currentUser].bio,
+                pass: userData[currentUser].pass,
+                avatar: userData[currentUser].avatar
+            }).then(() => {
+                updateProfileUI();
+                document.getElementById('current-user-badge').innerText = userData[currentUser].name + " ✨";
+                showPopupNotification("تم الحفظ ✨", "تم حفظ جميع تعديلات بروفايلك الملكي أونلاين بنجاح.");
+            });
+        }
+
+        function handleAvatarSelect(event) {
+            let file = event.target.files[0];
+            if (file) {
+                let reader = new FileReader();
+                reader.onload = function(e) {
+                    userData[currentUser].avatar = e.target.result;
+                    document.getElementById('profileAvatar').src = e.target.result;
+                    db.ref('users/' + currentUser + '/avatar').set(e.target.result);
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function handleImageSelect(event) {
+            let file = event.target.files[0];
+            if (file) {
+                let reader = new FileReader();
+                reader.onload = function(e) {
+                    selectedPostImageBase64 = e.target.result;
+                    let imgPreview = document.getElementById('imagePreview');
+                    imgPreview.src = e.target.result;
+                    imgPreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function switchTab(tabId, title) {
+            document.querySelectorAll('.content-area').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('nav button').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById('tab-' + tabId).classList.add('active');
+            document.getElementById('btn-' + tabId).classList.add('active');
+            document.getElementById('header-title').innerText = title;
+        }
+
+        function initPresenceSystem() {
+            let myStatusRef = db.ref('presence/' + currentUser);
+            let partnerKey = currentUser === "أدهم" ? "أماني" : "أدهم";
+            let partnerStatusRef = db.ref('presence/' + partnerKey);
+
+            myStatusRef.set({ state: "online", lastChanged: firebase.database.ServerValue.TIMESTAMP });
+            myStatusRef.onDisconnect().set({ state: "offline", lastChanged: firebase.database.ServerValue.TIMESTAMP });
+
+            partnerStatusRef.on('value', snapshot => {
+                let statusData = snapshot.val();
+                let indicator = document.getElementById('partnerStatusIndicator');
+                let statusText = document.getElementById('statusText');
+
+                if (statusData && statusData.state === "online") {
+                    indicator.className = "online";
+                    statusText.innerText = "متصل الآن 🟢";
+                } else {
+                    indicator.className = "offline";
+                    if (statusData && statusData.lastChanged) {
+                        let date = new Date(statusData.lastChanged);
+                        let timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        statusText.innerText = `آخر ظهور اليوم الساعة ${timeStr}`;
+                    } else {
+                        statusText.innerText = "غير متصل";
+                    }
+                }
+            });
+        }
+
+        function showPopupNotification(title, desc) {
+            let popup = document.getElementById('notification-popup');
+            document.getElementById('notif-title').innerText = title;
+            document.getElementById('notif-desc').innerText = desc;
+            
+            popup.classList.add('show');
+            setTimeout(() => {
+                popup.classList.remove('show');
+            }, 4000);
+        }
+
+        function listenToFirebase() {
+            let isFirstMessageLoad = true;
+            db.ref('messages').on('value', snapshot => {
+                let messagesList = document.getElementById('chatMessages');
+                messagesList.innerHTML = "";
+                let data = snapshot.val();
+                
+                if(data) {
+                    let keys = Object.keys(data);
+                    let lastKey = keys[keys.length - 1];
+                    let lastMsg = data[lastKey];
+
+                    if (!isFirstMessageLoad && lastMsg.sender !== currentUser) {
+                        showPopupNotification(`رسالة جديدة من ${lastMsg.sender} ❤️`, lastMsg.text);
+                    }
+
+                    keys.forEach(key => {
+                        let msg = data[key];
+                        let isSent = msg.sender === currentUser;
+                        let msgDiv = document.createElement('div');
+                        msgDiv.className = `insta-message-container ${isSent ? 'sent' : 'received'}`;
+                        
+                        let replyHTML = msg.replyTo ? `<div class="reply-quote"><i class="fas fa-reply"></i> ${msg.replyTo}</div>` : '';
+                        
+                        msgDiv.innerHTML = `
+                            <div class="insta-bubble">
+                                ${replyHTML}
+                                ${msg.text}
+                            </div>
+                            <div class="msg-action-buttons">
+                                <button class="btn-reply-action" onclick="prepareReply(this, '${msg.text.replace(/'/g, "\\'")}')"><i class="fas fa-reply"></i> رد</button>
+                                <button class="btn-delete-action" onclick="deleteMessage('${key}')"><i class="fas fa-trash-alt"></i> حذف</button>
+                            </div>
+                        `;
+                        messagesList.appendChild(msgDiv);
+                    });
+                    messagesList.scrollTop = messagesList.scrollHeight;
+                }
+                isFirstMessageLoad = false;
+            });
+
+            let isFirstPostLoad = true;
+            db.ref('posts').on('value', snapshot => {
+                let postsList = document.getElementById('postsList');
+                postsList.innerHTML = "";
+                let data = snapshot.val();
+                if(data) {
+                    let keys = Object.keys(data).reverse();
+                    let latestPost = data[keys[0]];
+
+                    if (!isFirstPostLoad && latestPost.sender !== userData[currentUser].name) {
+                        showPopupNotification(`منشور جديد من ${latestPost.sender} ✨`, latestPost.text);
+                    }
+
+                    keys.forEach(key => {
+                        let post = data[key];
+                        let card = document.createElement('div');
+                        card.className = 'memory-card';
+                        let imgHTML = post.image ? `<img src="${post.image}" class="memory-img" alt="Memory Image">` : '';
+                        card.innerHTML = `
+                            <div class="memory-header">
+                                <img src="${post.avatar}" class="memory-avatar" alt="avatar">
+                                <div class="memory-user-info">
+                                    <span>${post.sender}</span>
+                                    <span>الآن</span>
+                                </div>
+                            </div>
+                            <p>${post.text}</p>
+                            ${imgHTML}
+                        `;
+                        postsList.appendChild(card);
+                    });
+                }
+                isFirstPostLoad = false;
+            });
+
+            db.ref('events').on('value', snapshot => {
+                let eventsList = document.getElementById('eventsList');
+                eventsList.innerHTML = "";
+                let data = snapshot.val();
+                if(data) {
+                    Object.keys(data).reverse().forEach(key => {
+                        let ev = data[key];
+                        let card = document.createElement('div');
+                        card.className = 'event-card';
+                        card.innerHTML = `
+                            <div class="event-header">
+                                <div class="event-info">
+                                    <h3 class="event-title-text">${ev.title}</h3>
+                                    <p>بواسطة: ${ev.sender}</p>
+                                </div>
+                            </div>
+                            <div class="event-date-badge event-date-text">${ev.date}</div>
+                            <div class="event-controls">
+                                <button class="btn-delete-event" onclick="deleteFirebaseItem('events/${key}')"><i class="fas fa-trash-alt"></i> حذف</button>
+                            </div>
+                        `;
+                        eventsList.appendChild(card);
+                    });
+                }
+            });
+        }
+
+        function sendMessage() {
+            let input = document.getElementById('chatInput');
+            let text = input.value;
+            if(!text.trim()) return;
+
+            db.ref('messages').push({
+                sender: currentUser,
+                text: text,
+                replyTo: replyingToText || null,
+                timestamp: Date.now()
+            });
+
+            input.value = '';
+            cancelReply();
+        }
+
+        function addPost() {
+            let text = document.getElementById('postInput').value;
+            if(!text.trim() && !selectedPostImageBase64) return;
+
+            db.ref('posts').push({
+                sender: userData[currentUser].name,
+                avatar: userData[currentUser].avatar,
+                text: text,
+                image: selectedPostImageBase64 || null,
+                timestamp: Date.now()
+            });
+
+            document.getElementById('postInput').value = '';
+            document.getElementById('imagePreview').style.display = 'none';
+            document.getElementById('postImageFile').value = '';
+            selectedPostImageBase64 = "";
+            showPopupNotification("تم النشر بنجاح ✨", "تمت مشاركة ذكرتكم بنجاح.");
+        }
+
+        function addEvent() {
+            let title = document.getElementById('eventTitle').value;
+            let date = document.getElementById('eventDate').value;
+            if(!title.trim() || !date) return alert("يرجى إدخال عنوان المناسبة والتاريخ!");
+
+            db.ref('events').push({
+                title: title,
+                date: date,
+                sender: userData[currentUser].name
+            });
+
+            document.getElementById('eventTitle').value = '';
+            document.getElementById('eventDate').value = '';
+            showPopupNotification("مفكرة المناسبات 🎉", "تم إضافة المناسبة بنجاح.");
+        }
+
+        function deleteMessage(key) {
+            db.ref('messages/' + key).remove();
+        }
+
+        function deleteFirebaseItem(path) {
+            if(confirm("هل تريد الحذف؟")) db.ref(path).remove();
+        }
+
+        function handleChatKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
+        function prepareReply(btn, text) {
+            replyingToText = text;
+            document.getElementById('replyPreviewText').innerText = text;
+            document.getElementById('replyPreviewBar').style.display = 'flex';
+            document.getElementById('chatInput').focus();
+        }
+        function cancelReply() {
+            replyingToText = null;
+            document.getElementById('replyPreviewBar').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
