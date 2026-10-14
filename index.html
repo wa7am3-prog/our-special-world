@@ -11,9 +11,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- مكتبات Firebase و Cloud Firestore أونلاين -->
+    <!-- مكتبات Firebase و Realtime Database أونلاين -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <style>
         :root {
@@ -211,6 +211,668 @@
         .event-info p { font-size: 12px; color: var(--text-muted); }
         .event-date-badge { background: rgba(212, 175, 55, 0.1); border: 1px solid var(--luxury-gold); color: var(--luxury-gold); padding: 6px 14px; border-radius: 10px; font-size: 12px; font-weight: 700; display: inline-block; align-self: flex-start; }
         .event-controls { display: flex; gap: 15px; border-top: 1px solid var(--border-color); padding-top: 10px; margin-top: 5px; }
+        .event-controls button { background: none; border: none; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 5px; font-weight: 600; }
+        .btn-delete-event { color: #ff5252; }
+
+        .chat-container { display: flex; flex-direction: column; height: 100%; }
+        
+        .contacts-view { display: flex; flex-direction: column; gap: 10px; }
+        .contacts-title { font-size: 15px; font-weight: 800; color: var(--luxury-gold); margin-bottom: 5px; }
+        
+        .contact-card {
+            background: var(--card-bg); border: 1px solid var(--border-color);
+            border-radius: 18px; padding: 14px 16px; display: flex; align-items: center;
+            gap: 14px; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .contact-card:active { transform: scale(0.98); background: rgba(212, 175, 55, 0.08); }
+        .contact-avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--luxury-gold); }
+        .contact-info { flex: 1; }
+        .contact-info h4 { font-size: 15px; font-weight: 800; color: white; margin-bottom: 3px; }
+        .contact-info p { font-size: 11px; display: flex; align-items: center; gap: 5px; font-weight: 600; }
+        .contact-info p.online { color: #2ecc71; }
+        .contact-info p.offline { color: var(--text-muted); }
+
+        .chat-room-view { display: none; flex-direction: column; height: 100%; }
+        .chat-top-bar { display: flex; align-items: center; gap: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color); margin-bottom: 10px; }
+        .back-to-contacts { background: none; border: none; color: var(--luxury-gold); font-size: 18px; cursor: pointer; padding: 5px; }
+        .chat-partner-avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 2px solid var(--luxury-gold); }
+        .chat-partner-info h3 { font-size: 15px; font-weight: 800; color: white; }
+        .chat-partner-info span { font-size: 11px; display: flex; align-items: center; gap: 5px; font-weight: 600; }
+        .chat-partner-info span.online { color: #2ecc71; }
+        .chat-partner-info span.offline { color: var(--text-muted); }
+
+        .chat-messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 10px 5px; }
+        
+        .insta-message-container { display: flex; flex-direction: column; max-width: 85%; }
+        .insta-message-container.sent { align-self: flex-end; align-items: flex-end; }
+        .insta-message-container.received { align-self: flex-start; align-items: flex-start; }
+        
+        .insta-bubble { padding: 12px 18px; border-radius: 22px; font-size: 14px; line-height: 1.5; word-break: break-word; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .insta-message-container.sent .insta-bubble { background: linear-gradient(135deg, #d4af37, #ff5c8a); color: #080204; font-weight: 600; border-bottom-left-radius: 22px; border-bottom-right-radius: 4px; }
+        .insta-message-container.received .insta-bubble { background: #1c0e14; color: white; border-bottom-left-radius: 4px; border-bottom-right-radius: 22px; border: 1px solid var(--border-color); }
+        
+        .reply-quote { background: rgba(0, 0, 0, 0.25); border-right: 3px solid var(--luxury-gold); padding: 5px 10px; border-radius: 6px; font-size: 11px; margin-bottom: 6px; opacity: 0.9; }
+        .msg-action-buttons { display: flex; gap: 15px; font-size: 11px; margin-top: 4px; padding: 0 4px; }
+        .msg-action-buttons button { background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 4px; font-size: 11px; opacity: 0.8; font-weight: 600; }
+        .btn-reply-action { color: var(--luxury-gold); }
+        .btn-delete-action { color: #ff5252; }
+
+        .reply-preview-bar { display: none; background: rgba(212, 175, 55, 0.08); border-top: 1px solid var(--border-color); padding: 10px 15px; justify-content: space-between; align-items: center; font-size: 12px; }
+        .reply-preview-bar span { color: var(--luxury-gold); font-weight: 700; }
+        .reply-preview-bar button { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 16px; }
+
+        .chat-input-area { display: flex; flex-direction: column; border-top: 1px solid var(--border-color); background: transparent; padding-top: 8px; }
+        .chat-input-row { display: flex; align-items: center; gap: 10px; }
+        .insta-input-box { flex: 1; display: flex; align-items: center; background: #1c0e14; border: 1px solid var(--border-color); border-radius: 30px; padding: 6px 18px; }
+        .insta-input-box input { flex: 1; background: transparent; border: none; color: white; outline: none; padding: 8px 5px; font-size: 14px; }
+        .insta-input-box input::placeholder { color: var(--text-muted); }
+        .insta-send-btn { background: var(--primary-gradient); border: none; color: white; font-weight: 700; font-size: 14px; cursor: pointer; padding: 10px 20px; border-radius: 25px; box-shadow: 0 4px 12px rgba(255, 65, 108, 0.3); }
+
+        .profile-container { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 24px; padding: 25px 20px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
+        .profile-avatar-wrapper { position: relative; display: inline-block; margin-bottom: 12px; }
+        .profile-avatar-large { width: 95px; height: 95px; border-radius: 50%; object-fit: cover; border: 3px solid var(--luxury-gold); box-shadow: 0 0 20px rgba(212, 175, 55, 0.3); }
+        .edit-avatar-btn { position: absolute; bottom: 0; right: 0; background: var(--primary-gradient); width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: white; font-size: 12px; cursor: pointer; border: 2px solid var(--bg-color); box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        
+        .profile-bio-box {
+            background: rgba(212, 175, 55, 0.05); border: 1px dashed var(--border-color);
+            padding: 10px; border-radius: 12px; font-size: 13px; color: var(--text-muted);
+            margin-top: 8px; margin-bottom: 15px; font-style: italic;
+        }
+
+        .edit-profile-box { background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 16px; padding: 18px; margin-top: 10px; text-align: right; }
+        .edit-profile-box label { font-size: 12px; color: var(--luxury-gold); display: block; margin-bottom: 5px; font-weight: 700; }
+        .edit-profile-box input, .edit-profile-box textarea { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); padding: 10px 14px; border-radius: 12px; color: white; font-size: 13px; outline: none; margin-bottom: 12px; resize: none; }
+
+        .about-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 24px; padding: 30px 20px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
+        .about-logo { font-size: 60px; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 12px; }
+        .about-card h2 { font-size: 24px; margin-bottom: 6px; font-weight: 900; }
+        .about-card .designer-tag { display: inline-block; background: rgba(212, 175, 55, 0.15); color: var(--luxury-gold); padding: 6px 18px; border-radius: 20px; font-size: 13px; font-weight: 800; margin-bottom: 20px; border: 1px solid var(--luxury-gold); }
+    </style>
+</head>
+<body>
+
+    <div id="notification-popup">
+        <i class="fas fa-heart-pulse"></i>
+        <div class="notif-text">
+            <h4 id="notif-title">إشعار جديد</h4>
+            <p id="notif-desc">لديك رسالة أو ذكرى جديدة في عالمكما الخاص</p>
+        </div>
+    </div>
+
+    <!-- شاشة تسجيل الدخول أو إنشاء حساب حقيقي عبر Realtime Database -->
+    <div id="auth-screen">
+        <div class="auth-card">
+            <i class="fas fa-crown heart-icon"></i>
+            <h1>عالمنا الخاص</h1>
+            <p>مساحة الحب والذكريات الفاخرة ❤️</p>
+            
+            <div class="auth-tabs">
+                <button class="auth-tab active" id="tabLoginBtn" onclick="switchAuthMode('login')">تسجيل دخول</button>
+                <button class="auth-tab" id="tabRegisterBtn" onclick="switchAuthMode('register')">إنشاء حساب جديد</button>
+            </div>
+            
+            <div class="input-group">
+                <label>اسمك الملكي:</label>
+                <input type="text" id="authUsername" placeholder="مثال: أدهم أو أماني">
+            </div>
+            
+            <div class="input-group">
+                <label>كلمة السر:</label>
+                <input type="password" id="authPassword" placeholder="أدخل كلمة السر">
+            </div>
+
+            <button class="btn-main" id="authSubmitBtn" onclick="handleAuthAction()">دخول لعالمنا الفخم ✨</button>
+            <p style="font-size: 11px; color: var(--text-muted); margin-top: 18px;">تصميم وتطوير: أدهم الهبة ✨</p>
+        </div>
+    </div>
+
+    <div id="app-container">
+        <header>
+            <span id="header-title">ذكرياتنا الملكية</span>
+            <span class="user-badge" id="current-user-badge"></span>
+        </header>
+
+        <div id="tab-posts" class="content-area active">
+            <div class="post-creator">
+                <textarea id="postInput" placeholder="اكتب ذكرى فخمة أو لحظة مميزة تجمعنا..."></textarea>
+                <label class="image-upload-label" for="postImageFile">
+                    <i class="fas fa-image"></i> إضافة صورة فخمة من المعرض
+                </label>
+                <input type="file" id="postImageFile" accept="image/*" style="display:none;" onchange="handleImageSelect(event)">
+                <img id="imagePreview" class="preview-img" alt="Preview">
+
+                <div class="post-footer">
+                    <span style="font-size: 11px; color: var(--text-muted);">نشر للذكرى الخالدة</span>
+                    <button onclick="addPost()">نشر الآن ✨</button>
+                </div>
+            </div>
+            <div id="postsList"></div>
+        </div>
+
+        <div id="tab-events" class="content-area">
+            <div class="post-creator">
+                <h3 style="font-size: 15px; margin-bottom: 12px; color: var(--luxury-gold); font-weight: 800;">إضافة مناسبة أو تاريخ ملكي 🎉</h3>
+                <input type="text" id="eventTitle" placeholder="عنوان المناسبة (مثال: ذكرى لقائنا الأول)" style="width:100%; padding:12px; background:rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:12px; color:white; margin-bottom:12px; outline:none;">
+                <input type="date" id="eventDate" style="width:100%; padding:12px; background:rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:12px; color:white; margin-bottom:12px; outline:none;">
+                <button onclick="addEvent()" class="btn-main" style="padding:10px;">إضافة للمفكرة الملكية ❤️</button>
+            </div>
+            <div id="eventsList"></div>
+        </div>
+
+        <div id="tab-chat" class="content-area">
+            <div class="chat-container">
+                <div id="contactsView" class="contacts-view">
+                    <div class="contacts-title"><i class="fas fa-address-book"></i> جهات الاتصال الملكية</div>
+                    <div id="contactsList"></div>
+                </div>
+
+                <div id="chatRoomView" class="chat-room-view">
+                    <div class="chat-top-bar">
+                        <button class="back-to-contacts" onclick="backToContacts()"><i class="fas fa-arrow-right"></i></button>
+                        <img id="chatHeaderAvatar" src="" class="chat-partner-avatar" alt="Partner">
+                        <div class="chat-partner-info">
+                            <h3 id="chatHeaderName">الحبيب</h3>
+                            <span id="partnerStatusIndicator" class="offline"><i class="fas fa-circle" style="font-size: 7px;"></i> <span id="statusText">جاري التحميل...</span></span>
+                        </div>
+                    </div>
+
+                    <div class="chat-messages" id="chatMessages"></div>
+
+                    <div class="chat-input-area">
+                        <div id="replyPreviewBar" class="reply-preview-bar">
+                            <div>الرد على: <span id="replyPreviewText"></span></div>
+                            <button onclick="cancelReply()"><i class="fas fa-times"></i></button>
+                        </div>
+                        <div class="chat-input-row">
+                            <div class="insta-input-box">
+                                <input type="text" id="chatInput" placeholder="اكتب رسالة ملكية..." onkeypress="handleChatKeyPress(event)">
+                            </div>
+                            <button class="insta-send-btn" onclick="sendMessage()">إرسال</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-profile" class="content-area">
+            <div class="profile-container">
+                <div class="profile-avatar-wrapper">
+                    <img id="profileAvatar" src="" class="profile-avatar-large" alt="Profile">
+                    <label class="edit-avatar-btn" for="profileAvatarFile"><i class="fas fa-camera"></i></label>
+                    <input type="file" id="profileAvatarFile" accept="image/*" style="display:none;" onchange="handleAvatarSelect(event)">
+                </div>
+                <h2 id="profileName" style="color: var(--luxury-gold); font-weight: 900;">اسم المستخدم</h2>
+                <div id="profileBioDisplay" class="profile-bio-box">"لا يوجد بايو مضاف بعد"</div>
+
+                <div class="edit-profile-box">
+                    <label>تعديل اسمك الملكي:</label>
+                    <input type="text" id="editNameInput" placeholder="اكتب اسمك الجديد...">
+
+                    <label>تعديل البايو (النبذة التعريفية):</label>
+                    <textarea id="editBioInput" rows="2" placeholder="اكتب جملة تعبر عن حبكما..."></textarea>
+
+                    <label>تعديل كلمة السر الخاصة بك:</label>
+                    <input type="password" id="editPasswordInput" placeholder="كلمة السر الجديدة للحساب">
+
+                    <button class="btn-main" style="padding: 10px; font-size: 14px; margin: 0;" onclick="saveProfile()">حفظ جميع التعديلات ✨</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-about" class="content-area">
+            <div class="about-card">
+                <i class="fas fa-crown about-logo"></i>
+                <h2>عالمنا الخاص الفاخر</h2>
+                <span class="designer-tag">تصميم وتطوير: أدهم الهبة ✨</span>
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.6;">
+                    تطبيق ملكي حصري تم تصميمه خصيصاً ليجمع بين أماني وأدهم في قمة الفخامة والأمان، مع تواصل فوري، إشعارات حية، وحسابات منفصلة ومحمية.
+                </p>
+                <div style="margin-top: 25px; border-top: 1px solid var(--border-color); padding-top: 15px; font-size: 11px; color: var(--text-muted);">
+                    جميع الحقوق الملكية محفوظة © تصميم أدهم الهبة 2026
+                </div>
+            </div>
+        </div>
+
+        <nav>
+            <button onclick="switchTab('posts', 'ذكرياتنا الملكية')" class="active" id="btn-posts"><i class="fas fa-gem"></i> الذكريات</button>
+            <button onclick="switchTab('events', 'مناسباتنا وتواريخنا')" id="btn-events"><i class="fas fa-calendar-star"></i> المناسبات</button>
+            <button onclick="switchTab('chat', 'المراسلة الملكية')" id="btn-chat"><i class="fab fa-telegram-plane"></i> المراسلة</button>
+            <button onclick="switchTab('profile', 'الملف الشخصي')" id="btn-profile"><i class="fas fa-user-crown"></i> بروفايلي</button>
+            <button onclick="switchTab('about', 'عن التطبيق')" id="btn-about"><i class="fas fa-info-circle"></i> عن البرنامج</button>
+        </nav>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCxFtLKRm7RerWr5dZDyeAPp-Nm-AzwIH0",
+            authDomain: "ourspecialworld-2106f.firebaseapp.com",
+            databaseURL: "https://ourspecialworld-2106f-default-rtdb.firebaseio.com",
+            projectId: "ourspecialworld-2106f",
+            storageBucket: "ourspecialworld-2106f.firebasestorage.app",
+            messagingSenderId: "506377395678",
+            appId: "1:506377395678:web:f1748adf03534d1f29914f",
+            measurementId: "G-EZTGK8RGYS"
+        };
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        
+        const db = firebase.database();
+
+        let currentUserKey = "";
+        let selectedPostImageBase64 = "";
+        let replyingToText = null;
+        let authMode = "login";
+
+        function switchAuthMode(mode) {
+            authMode = mode;
+            let btnLogin = document.getElementById('tabLoginBtn');
+            let btnReg = document.getElementById('tabRegisterBtn');
+            let submitBtn = document.getElementById('authSubmitBtn');
+
+            if(mode === 'login') {
+                btnLogin.classList.add('active');
+                btnReg.classList.remove('active');
+                submitBtn.innerText = "دخول لعالمنا الفخم ✨";
+            } else {
+                btnReg.classList.add('active');
+                btnLogin.classList.remove('active');
+                submitBtn.innerText = "إنشاء الحساب الجديد ✨";
+            }
+        }
+
+        function handleAuthAction() {
+            let username = document.getElementById('authUsername').value.trim();
+            let passInput = document.getElementById('authPassword').value.trim();
+
+            if(!username || !passInput) {
+                alert("يرجى إدخال اسمك الملكي وكلمة السر!");
+                return;
+            }
+
+            let safeKey = username.replace(/[.#$\/\[\]]/g, "_");
+
+            db.ref('users/' + safeKey).once('value').then(snapshot => {
+                let dbUser = snapshot.val();
+
+                if (authMode === 'login') {
+                    if (dbUser) {
+                        if (dbUser.pass === passInput) {
+                            loginSuccess(safeKey, dbUser);
+                        } else {
+                            alert("كلمة السر غير صحيحة!");
+                        }
+                    } else {
+                        alert("هذا الحساب غير موجود! انقر على 'إنشاء حساب جديد'.");
+                    }
+                } else {
+                    if (dbUser) {
+                        alert("هذا الاسم مستخدم مسبقاً! اختر اسماً آخر أو سجل دخولك.");
+                    } else {
+                        let newUserData = {
+                            name: username,
+                            pass: passInput,
+                            bio: "أهلاً بك في عالمنا الخاص ✨",
+                            avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100"
+                        };
+                        db.ref('users/' + safeKey).set(newUserData).then(() => {
+                            loginSuccess(safeKey, newUserData);
+                        });
+                    }
+                }
+            });
+        }
+
+        function loginSuccess(userKey, userDataObj) {
+            currentUserKey = userKey;
+            window.activeUserData = userDataObj;
+
+            document.getElementById('auth-screen').style.display = 'none';
+            document.getElementById('app-container').style.display = 'flex';
+            document.getElementById('current-user-badge').innerText = userDataObj.name + " ✨";
+            
+            updateProfileUI();
+            initPresenceSystem();
+            loadContacts();
+            listenToRealtimeDB();
+        }
+
+        function updateProfileUI() {
+            let u = window.activeUserData;
+            document.getElementById('profileName').innerText = u.name;
+            document.getElementById('profileAvatar').src = u.avatar;
+            document.getElementById('profileBioDisplay').innerText = u.bio ? `"${u.bio}"` : '"لا يوجد بايو مضاف"';
+            document.getElementById('editNameInput').value = u.name;
+            document.getElementById('editBioInput').value = u.bio || '';
+            document.getElementById('editPasswordInput').value = u.pass || '';
+        }
+
+        function loadContacts() {
+            db.ref('users').once('value').then(snapshot => {
+                let users = snapshot.val();
+                let contactsList = document.getElementById('contactsList');
+                contactsList.innerHTML = "";
+
+                if(users) {
+                    Object.keys(users).forEach(key => {
+                        if(key !== currentUserKey) {
+                            let partner = users[key];
+                            contactsList.innerHTML += `
+                                <div class="contact-card" onclick="openChatRoom('${key}', '${partner.name}', '${partner.avatar || ''}')">
+                                    <img src="${partner.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}" class="contact-avatar" alt="Avatar">
+                                    <div class="contact-info">
+                                        <h4>${partner.name}</h4>
+                                        <p id="contactStatus_${key}" class="offline"><i class="fas fa-circle" style="font-size: 7px;"></i> <span>جاري التحميل...</span></p>
+                                    </div>
+                                    <i class="fas fa-chevron-left" style="color: var(--luxury-gold); font-size: 14px;"></i>
+                                </div>
+                            `;
+                        }
+                    });
+                }
+            });
+        }
+
+        function openChatRoom(partnerKey, partnerName, partnerAvatar) {
+            window.currentPartnerKey = partnerKey;
+            document.getElementById('chatHeaderName').innerText = partnerName;
+            document.getElementById('chatHeaderAvatar').src = partnerAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100';
+
+            document.getElementById('contactsView').style.display = 'none';
+            document.getElementById('chatRoomView').style.display = 'flex';
+        }
+
+        function backToContacts() {
+            document.getElementById('chatRoomView').style.display = 'none';
+            document.getElementById('contactsView').style.display = 'flex';
+        }
+
+        function saveProfile() {
+            let newName = document.getElementById('editNameInput').value.trim();
+            let newBio = document.getElementById('editBioInput').value.trim();
+            let newPass = document.getElementById('editPasswordInput').value.trim();
+
+            if(newName) window.activeUserData.name = newName;
+            if(newBio) window.activeUserData.bio = newBio;
+            if(newPass) window.activeUserData.pass = newPass;
+
+            db.ref('users/' + currentUserKey).set(window.activeUserData).then(() => {
+                updateProfileUI();
+                loadContacts();
+                document.getElementById('current-user-badge').innerText = window.activeUserData.name + " ✨";
+                showPopupNotification("تم الحفظ ✨", "تم حفظ جميع تعديلات بروفايلك الملكي أونلاين بنجاح.");
+            });
+        }
+
+        function handleAvatarSelect(event) {
+            let file = event.target.files[0];
+            if (file) {
+                let reader = new FileReader();
+                reader.onload = function(e) {
+                    window.activeUserData.avatar = e.target.result;
+                    document.getElementById('profileAvatar').src = e.target.result;
+                    db.ref('users/' + currentUserKey + '/avatar').set(e.target.result).then(() => {
+                        loadContacts();
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function handleImageSelect(event) {
+            let file = event.target.files[0];
+            if (file) {
+                let reader = new FileReader();
+                reader.onload = function(e) {
+                    selectedPostImageBase64 = e.target.result;
+                    let imgPreview = document.getElementById('imagePreview');
+                    imgPreview.src = e.target.result;
+                    imgPreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function switchTab(tabId, title) {
+            document.querySelectorAll('.content-area').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('nav button').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById('tab-' + tabId).classList.add('active');
+            document.getElementById('btn-' + tabId).classList.add('active');
+            document.getElementById('header-title').innerText = title;
+        }
+
+        function initPresenceSystem() {
+            let myStatusRef = db.ref('presence/' + currentUserKey);
+            myStatusRef.set({ state: "online", lastChanged: firebase.database.ServerValue.TIMESTAMP });
+            myStatusRef.onDisconnect().set({ state: "offline", lastChanged: firebase.database.ServerValue.TIMESTAMP });
+
+            db.ref('presence').on('value', snapshot => {
+                let presenceAll = snapshot.val();
+                if(presenceAll) {
+                    Object.keys(presenceAll).forEach(key => {
+                        let statusData = presenceAll[key];
+                        let contactListStatus = document.getElementById('contactStatus_' + key);
+                        let indicator = document.getElementById('partnerStatusIndicator');
+                        let statusText = document.getElementById('statusText');
+
+                        let statusStr = "غير متصل";
+                        let isOnline = false;
+
+                        if (statusData && statusData.state === "online") {
+                            isOnline = true;
+                            statusStr = "متصل الآن 🟢";
+                        } else {
+                            if (statusData && statusData.lastChanged) {
+                                let date = new Date(statusData.lastChanged);
+                                let timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                statusStr = `آخر ظهور اليوم الساعة ${timeStr}`;
+                            }
+                        }
+
+                        if (contactListStatus) {
+                            contactListStatus.className = isOnline ? "contact-info online" : "contact-info offline";
+                            contactListStatus.querySelector('span').innerText = statusStr;
+                        }
+                        if (key !== currentUserKey && indicator) {
+                            indicator.className = isOnline ? "online" : "offline";
+                            statusText.innerText = statusStr;
+                        }
+                    });
+                }
+            });
+        }
+
+        function showPopupNotification(title, desc) {
+            let popup = document.getElementById('notification-popup');
+            document.getElementById('notif-title').innerText = title;
+            document.getElementById('notif-desc').innerText = desc;
+            
+            popup.classList.add('show');
+            setTimeout(() => {
+                popup.classList.remove('show');
+            }, 4000);
+        }
+
+        function listenToRealtimeDB() {
+            let isFirstMessageLoad = true;
+            db.ref('messages').on('value', snapshot => {
+                let messagesList = document.getElementById('chatMessages');
+                messagesList.innerHTML = "";
+                let data = snapshot.val();
+                
+                if(data) {
+                    let keys = Object.keys(data);
+                    let lastKey = keys[keys.length - 1];
+                    let lastMsg = data[lastKey];
+
+                    if (!isFirstMessageLoad && lastMsg.senderKey !== currentUserKey) {
+                        showPopupNotification(`رسالة جديدة ❤️`, lastMsg.text);
+                    }
+
+                    keys.forEach(key => {
+                        let msg = data[key];
+                        let isSent = msg.senderKey === currentUserKey;
+                        let msgDiv = document.createElement('div');
+                        msgDiv.className = `insta-message-container ${isSent ? 'sent' : 'received'}`;
+                        
+                        let replyHTML = msg.replyTo ? `<div class="reply-quote"><i class="fas fa-reply"></i> ${msg.replyTo}</div>` : '';
+                        
+                        msgDiv.innerHTML = `
+                            <div class="insta-bubble">
+                                ${replyHTML}
+                                ${msg.text}
+                            </div>
+                            <div class="msg-action-buttons">
+                                <button class="btn-reply-action" onclick="prepareReply(this, '${msg.text.replace(/'/g, "\\'")}')"><i class="fas fa-reply"></i> رد</button>
+                                <button class="btn-delete-action" onclick="deleteDBItem('messages/${key}')"><i class="fas fa-trash-alt"></i> حذف</button>
+                            </div>
+                        `;
+                        messagesList.appendChild(msgDiv);
+                    });
+                    messagesList.scrollTop = messagesList.scrollHeight;
+                }
+                isFirstMessageLoad = false;
+            });
+
+            let isFirstPostLoad = true;
+            db.ref('posts').on('value', snapshot => {
+                let postsList = document.getElementById('postsList');
+                postsList.innerHTML = "";
+                let data = snapshot.val();
+                if(data) {
+                    let keys = Object.keys(data).reverse();
+                    let latestPost = data[keys[0]];
+
+                    if (!isFirstPostLoad && latestPost.senderKey !== currentUserKey) {
+                        showPopupNotification(`منشور جديد ✨`, latestPost.text);
+                    }
+
+                    keys.forEach(key => {
+                        let post = data[key];
+                        let card = document.createElement('div');
+                        card.className = 'memory-card';
+                        let imgHTML = post.image ? `<img src="${post.image}" class="memory-img" alt="Memory Image">` : '';
+                        card.innerHTML = `
+                            <div class="memory-header">
+                                <img src="${post.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}" class="memory-avatar" alt="avatar">
+                                <div class="memory-user-info">
+                                    <span>${post.senderName}</span>
+                                    <span>الآن</span>
+                                </div>
+                            </div>
+                            <p>${post.text}</p>
+                            ${imgHTML}
+                        `;
+                        postsList.appendChild(card);
+                    });
+                }
+                isFirstPostLoad = false;
+            });
+
+            db.ref('events').on('value', snapshot => {
+                let eventsList = document.getElementById('eventsList');
+                eventsList.innerHTML = "";
+                let data = snapshot.val();
+                if(data) {
+                    Object.keys(data).reverse().forEach(key => {
+                        let ev = data[key];
+                        let card = document.createElement('div');
+                        card.className = 'event-card';
+                        card.innerHTML = `
+                            <div class="event-header">
+                                <div class="event-info">
+                                    <h3 class="event-title-text">${ev.title}</h3>
+                                    <p>بواسطة: ${ev.senderName}</p>
+                                </div>
+                            </div>
+                            <div class="event-date-badge event-date-text">${ev.date}</div>
+                            <div class="event-controls">
+                                <button class="btn-delete-event" onclick="deleteDBItem('events/${key}')"><i class="fas fa-trash-alt"></i> حذف</button>
+                            </div>
+                        `;
+                        eventsList.appendChild(card);
+                    });
+                }
+            });
+        }
+
+        function sendMessage() {
+            let input = document.getElementById('chatInput');
+            let text = input.value;
+            if(!text.trim()) return;
+
+            db.ref('messages').push({
+                senderKey: currentUserKey,
+                senderName: window.activeUserData.name,
+                text: text,
+                replyTo: replyingToText || null,
+                timestamp: Date.now()
+            });
+
+            input.value = '';
+            cancelReply();
+        }
+
+        function addPost() {
+            let text = document.getElementById('postInput'].value;
+            if(!text.trim() && !selectedPostImageBase64) return;
+
+            db.ref('posts').push({
+                senderKey: currentUserKey,
+                senderName: window.activeUserData.name,
+                avatar: window.activeUserData.avatar || '',
+                text: text,
+                image: selectedPostImageBase64 || null,
+                timestamp: Date.now()
+            });
+
+            document.getElementById('postInput').value = '';
+            document.getElementById('imagePreview').style.display = 'none';
+            document.getElementById('postImageFile').value = '';
+            selectedPostImageBase64 = "";
+            showPopupNotification("تم النشر بنجاح ✨", "تمت مشاركة ذكرتكم بنجاح.");
+        }
+
+        function addEvent() {
+            let title = document.getElementById('eventTitle').value;
+            let date = document.getElementById('eventDate').value;
+            if(!title.trim() || !date) return alert("يرجى إدخال عنوان المناسبة والتاريخ!");
+
+            db.ref('events').push({
+                title: title,
+                date: date,
+                senderKey: currentUserKey,
+                senderName: window.activeUserData.name
+            });
+
+            document.getElementById('eventTitle').value = '';
+            document.getElementById('eventDate').value = '';
+            showPopupNotification("مفكرة المناسبات 🎉", "تم إضافة المناسبة بنجاح.");
+        }
+
+        function deleteDBItem(path) {
+            if(confirm("هل تريد الحذف؟")) {
+                db.ref(path).remove();
+            }
+        }
+
+        function handleChatKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
+        function prepareReply(btn, text) {
+            replyingToText = text;
+            document.getElementById('replyPreviewText').innerText = text;
+            document.getElementById('replyPreviewBar').style.display = 'flex';
+            document.getElementById('chatInput').focus();
+        }
+        function cancelReply() {
+            replyingToText = null;
+            document.getElementById('replyPreviewBar').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
+: 5px; }
         .event-controls button { background: none; border: none; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 5px; font-weight: 600; }
         .btn-delete-event { color: #ff5252; }
 
