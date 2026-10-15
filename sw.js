@@ -1,4 +1,4 @@
-const CACHE_NAME = 'our-special-world-v1';
+const CACHE_NAME = 'our-special-world-v2';
 const urlsToCache = [
   './',
   './index.html',
